@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お弁当パズル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E3ECE8; --surface:#FBFBF7; --ink:#22303A; --muted:#4F5E66; --line:rgba(34,48,58,.16);
+  --lacquer:#9B2C24; --lacquer-deep:#7C221C; --well:#2E1D19;
+  --indigo:#2F4E86; --gold:#E0A91C; --leaf:#3F7E4E; --ok:#256B43; --warn:#8F3F0C;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#172120; --surface:#212C2A; --ink:#EEF1EC; --muted:#B3BEB9; --line:rgba(238,241,236,.16);
+    --ok:#86CFA3; --warn:#F3AE73; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#172120; --surface:#212C2A; --ink:#EEF1EC; --muted:#B3BEB9; --line:rgba(238,241,236,.16);
+  --ok:#86CFA3; --warn:#F3AE73; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic","Yu Gothic",sans-serif;
+  font-size:20px; line-height:1.7; font-weight:500;
+}
+button{font:inherit; color:inherit}
+:focus-visible{outline:4px solid var(--gold); outline-offset:3px}
+
+.wrap{max-width:1120px; margin:0 auto; padding:16px 16px 40px}
+header{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:8px 20px; margin-bottom:14px}
+h1{font-size:2rem; line-height:1.2; margin:0; font-weight:700; letter-spacing:.04em}
+.greet{margin:4px 0 0; color:var(--muted); font-size:1.05rem}
+.served{margin:0; font-size:1.05rem; color:var(--muted)}
+.served strong{color:var(--ink); font-size:1.3rem}
+
+.levels{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px}
+.levels button{
+  min-height:52px; padding:6px 20px; border-radius:999px; border:2px solid var(--line);
+  background:var(--surface); cursor:pointer; font-size:1.05rem;
+}
+.levels button[aria-pressed="true"]{background:var(--indigo); border-color:var(--indigo); color:#fff; font-weight:700}
+
+.game{display:grid; gap:20px; grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){ .game{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); align-items:start} }
+
+.card{background:var(--surface); border-radius:18px; padding:18px; border:1px solid var(--line)}
+
+.customer{display:flex; gap:14px; align-items:flex-start}
+.face{
+  flex:0 0 auto; width:76px; height:76px; border-radius:50%; display:grid; place-items:center;
+  background:var(--bg);
+}
+.face img{width:58px; height:58px}
+.who img{width:30px; height:30px; vertical-align:-7px; margin-right:4px}
+.who{margin:0; font-weight:700; font-size:1.05rem}
+.bubble{margin:4px 0 0; font-size:1.2rem; line-height:1.75}
+.checklist{list-style:none; margin:12px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px}
+.checklist li{
+  padding:4px 14px; border-radius:999px; border:2px dashed var(--line); font-size:1rem;
+}
+.checklist li.done{border-style:solid; border-color:var(--ok); color:var(--ok); font-weight:700}
+.checklist li.ng{border-style:solid; border-color:var(--warn); color:var(--warn)}
+
+.bento-area{margin-top:16px}
+#bento{width:100%; height:auto; display:block; max-width:620px; margin:0 auto}
+#bento .slot{cursor:pointer}
+#bento .slot:focus{outline:none}
+#bento .slot:focus-visible .hit{stroke:var(--gold); stroke-width:6}
+#bento .sel{fill:none; stroke:var(--gold); stroke-width:7; animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{stroke-opacity:.45}}
+.shake{animation:shake .45s ease; transform-box:fill-box; transform-origin:center}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(4px)}}
+
+.feedback{min-height:3.4em; margin:12px 4px 0; font-size:1.12rem}
+.feedback.ok{color:var(--ok)}
+.feedback.warn{color:var(--warn); font-weight:700}
+
+.actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+.actions button{
+  min-height:52px; padding:6px 18px; border-radius:12px; border:2px solid var(--line);
+  background:var(--surface); cursor:pointer; font-size:1rem;
+}
+.actions button:disabled{opacity:.4; cursor:default}
+
+.tray h2{font-size:1.25rem; margin:0 0 4px}
+.tray .hint{margin:0 0 12px; color:var(--muted); font-size:1rem}
+.items{display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:10px}
+.item{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px;
+  min-height:124px; padding:12px 6px 10px; border-radius:14px; border:2px solid var(--line);
+  background:var(--bg); cursor:pointer; font-size:1rem; line-height:1.3; text-align:center;
+}
+.item[aria-pressed="true"]{border-color:var(--gold); box-shadow:0 0 0 3px var(--gold)}
+.tile{display:grid; place-items:center; font-size:30px; position:relative}
+.tile.big{width:80px; height:58px; border-radius:8px}
+.tile.square{width:58px; height:58px; border-radius:6px}
+.tile.round{width:60px; height:60px; border-radius:50%}
+.tile.tri{width:66px; height:60px; clip-path:polygon(50% 2%,98% 98%,2% 98%); padding-top:18px; font-size:26px}
+.tile.long{width:88px; height:34px; border-radius:6px; font-size:22px}
+.tile img{width:42px; height:42px; object-fit:contain; display:block}
+.tile.round img{width:44px; height:44px}
+.tile.tri img{width:30px; height:30px}
+.tile.long img{width:28px; height:28px}
+.tile .ume{width:16px; height:16px; border-radius:50%; background:#C8283B}
+.tile.dots{background-image:radial-gradient(#3a2a2a 1.4px,transparent 1.6px); background-size:9px 9px}
+
+details{margin-top:18px}
+.credit{margin:14px 0 0; font-size:.85rem; color:var(--muted)}
+.credit a{color:inherit}
+summary{cursor:pointer; font-weight:700; min-height:44px; display:flex; align-items:center}
+details p{margin:6px 0}
+
+/* wrap overlay */
+.overlay{
+  position:fixed; inset:0; display:none; place-items:center; padding:16px;
+  background:rgba(20,28,30,.55); z-index:10;
+}
+.overlay.open{display:grid}
+.sheet{
+  background:var(--surface); border-radius:22px; padding:20px 22px 24px; width:min(440px,100%);
+  text-align:center; max-height:100%; overflow:auto;
+}
+#wrapSvg{width:min(260px,70vw); height:auto; display:block; margin:0 auto}
+.flap{transform-box:view-box; transition:transform .7s cubic-bezier(.5,0,.3,1)}
+.fold .flap.top{transform:scaleY(-.82)}
+.fold .flap.bottom{transform:scaleY(-.82); transition-delay:.55s}
+.fold .flap.left{transform:scaleX(-.82); transition-delay:1.1s}
+.fold .flap.right{transform:scaleX(-.82); transition-delay:1.65s}
+.knot{transform-box:fill-box; transform-origin:center bottom; transform:scale(0); transition:transform .5s cubic-bezier(.3,1.6,.5,1) 2.4s}
+.fold .knot{transform:scale(1)}
+.thanks-text{opacity:0; transition:opacity .6s ease 2.9s}
+.fold ~ .thanks-text, .sheet.done .thanks-text{opacity:1}
+.sheet h2{font-size:2rem; margin:10px 0 0; color:var(--lacquer)}
+.sheet .line{font-size:1.2rem; margin:6px 0 16px}
+.next{
+  min-height:60px; padding:8px 28px; border-radius:999px; border:none; background:var(--indigo);
+  color:#fff; font-size:1.2rem; font-weight:700; cursor:pointer;
+}
+@media (prefers-reduced-motion: reduce){
+  .flap,.knot,.thanks-text{transition:none !important}
+  #bento .sel{animation:none}
+  .shake{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>お弁当パズル</h1>
+      <p class="greet" id="greet"></p>
+    </div>
+    <p class="served">お届けしたお弁当 <strong id="served">0</strong> 個</p>
+  </header>
+
+  <div class="levels" role="group" aria-label="むずかしさ">
+    <button type="button" data-level="easy">やさしい</button>
+    <button type="button" data-level="normal">ふつう</button>
+    <button type="button" data-level="deep">じっくり</button>
+  </div>
+
+  <div class="game">
+    <section class="card" aria-label="お客様とお弁当箱">
+      <div class="customer">
+        <div class="face" id="face" aria-hidden="true"></div>
+        <div>
+          <p class="who" id="who"></p>
+          <p class="bubble" id="order"></p>
+        </div>
+      </div>
+      <ul class="checklist" id="checklist" aria-label="ご注文のメモ"></ul>
+
+      <div class="bento-area">
+        <svg id="bento" viewBox="0 0 480 340" role="group" aria-label="お弁当箱"></svg>
+      </div>
+      <p class="feedback" id="feedback" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" id="takeOut" disabled>取り出す</button>
+        <button type="button" id="clearAll">はじめからつめ直す</button>
+      </div>
+    </section>
+
+    <section class="card tray" aria-label="おかずとごはん">
+      <h2>つめるもの</h2>
+      <p class="hint">光っている仕切りに入れるものを選んでください。</p>
+      <div class="items" id="items"></div>
+
+      <details>
+        <summary>あそびかた</summary>
+        <p>お客様のご注文をよく読んで、お弁当を詰めましょう。</p>
+        <p>仕切りには形があります。大きな四角にはごはん、丸いカップには丸いおかず、三角には三角のもの、というように、形の合うものだけが入ります。</p>
+        <p>ご注文と違うものや、形の合わないものは入りません。そのときは、もう一度選び直してみてください。時間制限はありません。ゆっくりどうぞ。</p>
+      </details>
+      <p class="credit">おかずとお客様の絵：<a href="https://github.com/microsoft/fluentui-emoji" target="_blank" rel="noopener">Microsoft Fluent Emoji</a>（MIT License）</p>
+    </section>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="thanksTitle">
+  <div class="sheet" id="sheet">
+    <svg id="wrapSvg" viewBox="0 0 300 300" aria-hidden="true">
+      <defs>
+        <pattern id="mame" width="18" height="18" patternUnits="userSpaceOnUse">
+          <rect width="18" height="18" fill="#2F4E86"/>
+          <circle cx="9" cy="9" r="3.2" fill="#F3F1E8"/>
+        </pattern>
+      </defs>
+      <g id="wrapStage">
+        <rect x="100" y="100" width="100" height="100" rx="10" fill="#9B2C24"/>
+        <rect x="108" y="108" width="84" height="84" rx="6" fill="none" stroke="#E0A91C" stroke-width="2"/>
+        <polygon class="flap top" style="transform-origin:150px 100px" points="100,100 200,100 150,8" fill="url(#mame)"/>
+        <polygon class="flap bottom" style="transform-origin:150px 200px" points="100,200 200,200 150,292" fill="url(#mame)"/>
+        <polygon class="flap left" style="transform-origin:100px 150px" points="100,100 100,200 8,150" fill="url(#mame)"/>
+        <polygon class="flap right" style="transform-origin:200px 150px" points="200,100 200,200 292,150" fill="url(#mame)"/>
+        <g class="knot">
+          <path d="M150 112 C 128 92, 112 78, 118 66 C 132 66, 146 88, 150 112 Z" fill="url(#mame)" stroke="#22365F" stroke-width="2"/>
+          <path d="M150 112 C 172 92, 188 78, 182 66 C 168 66, 154 88, 150 112 Z" fill="url(#mame)" stroke="#22365F" stroke-width="2"/>
+          <ellipse cx="150" cy="114" rx="13" ry="10" fill="#2F4E86" stroke="#22365F" stroke-width="2"/>
+        </g>
+      </g>
+    </svg>
+    <div class="thanks-text">
+      <p class="who" id="thanksWho"></p>
+      <h2 id="thanksTitle">ありがとう！</h2>
+      <p class="line" id="thanksLine"></p>
+      <button type="button" class="next" id="next">次のお客様へ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------------------------------------------------------------- data
+  const SHAPE_NAME = {big:"大きな四角", square:"四角", round:"丸いカップ", tri:"三角", long:"細長い"};
+
+  const ITEMS = [
+    {id:"shiro",   name:"白ごはん",     shape:"big",    kind:"rice", tags:[],        color:"#F6F3EA", icon:"🍚"},
+    {id:"kuri",    name:"栗ごはん",     shape:"big",    kind:"rice", tags:[],        color:"#F2E3BC", icon:"🌰", top:"🌰"},
+    {id:"genmai",  name:"玄米ごはん",   shape:"big",    kind:"rice", tags:[],        color:"#C39A63", icon:"🌾"},
+    {id:"ume",     name:"梅ごはん",     shape:"big",    kind:"rice", tags:[],        color:"#F6F3EA", ume:true},
+    {id:"sekihan", name:"お赤飯",       shape:"big",    kind:"rice", tags:[],        color:"#D98F8F", dots:true},
+    {id:"tamago",  name:"卵焼き",       shape:"square", tags:["egg"],  color:"#F2CF4A", icon:"🥚"},
+    {id:"salad",   name:"サラダ",       shape:"square", tags:["veg"],   color:"#DCEFC4", icon:"🥗"},
+    {id:"squid",   name:"焼きイカ",     shape:"square", tags:["fish"],  color:"#722F37", icon:"🦑"},
+    {id:"shake",   name:"焼き鮭",       shape:"square", tags:["fish"], color:"#F0A68B", icon:"🐟"},
+    {id:"shoga",   name:"生姜焼き",     shape:"square", tags:["meat"], color:"#B9773F", icon:"🥩"},
+    {id:"karaage", name:"唐揚げ",       shape:"round",  tags:["meat"], color:"#CB8B3C", icon:"🍗"},
+    {id:"tomato",  name:"ミニトマト",   shape:"round",  tags:["veg"],  color:"#A7CF86", icon:"🍅"},
+    {id:"potesara",name:"ポテトサラダ", shape:"round",  tags:["veg"],  color:"#F1E6B6", icon:"🥔"},
+    {id:"broc",    name:"ブロッコリー", shape:"round",  tags:["veg"],  color:"#D3E6BD", icon:"🥦"},
+    {id:"suika",   name:"すいか",       shape:"tri",    tags:["fruit"],color:"#F2938A", icon:"🍉"},
+    {id:"cheese",  name:"チーズ",       shape:"tri",    tags:[],       color:"#F6D96C", icon:"🧀"},
+    {id:"cake",    name:"ケーキ",       shape:"tri",    tags:["sweet"],color:"#F6E2EA", icon:"🍰"},
+    {id:"ebi",     name:"えびフライ",   shape:"long",   tags:["fish"], color:"#E8B45F", icon:"🍤"},
+    {id:"kyuri",   name:"きゅうり漬け", shape:"long",   tags:["veg"],  color:"#ACD392", icon:"🥒"},
+    {id:"kinpira", name:"きんぴら",     shape:"long",   tags:["veg"],  color:"#DA8A3B", icon:"🥕"},
+    {id:"sweetpotato", name:"スイートポテト", shape:"long",   tags:["veg"],  color:"#A77BC0", icon:"🍠"},
+
+  ];
+  const byId = Object.fromEntries(ITEMS.map(i => [i.id, i]));
+
+  // Pictures: Microsoft Fluent Emoji (MIT License) -- see README / credits
+  const IMG = {
+    shiro:"images/shiro.png", kuri:"images/kuri.png", genmai:"images/genmai.png",
+    tamago:"images/tamago.png", shake:"images/shake.png", shoga:"images/shoga.png",
+    karaage:"images/karaage.png", tomato:"images/tomato.png", potesara:"images/potesara.png",
+    broc:"images/broc.png", suika:"images/suika.png", cheese:"images/cheese.png",
+    cake:"images/cake.png", ebi:"images/ebi.png", kyuri:"images/kyuri.png",
+    kinpira:"images/kinpira.png", salad:"images/salad.png", squid:"images/squid.png",
+    sweetpotato: "images/sweetpotato.png",
+   face_doctor:"images/face_doctor.png",face_farmer:"images/face_farmer.png", 
+   face_ninja:"images/face_ninja.png" ,face_teacher:"images/face_teacher.png" ,
+    face_ojii:"images/face_ojii.png", face_obaa:"images/face_obaa.png",
+    face_daiku:"images/face_daiku.png", face_gakusei:"images/face_gakusei.png",
+    face_kango:"images/face_kango.png", face_mio:"images/face_mio.png",
+    face_ekicho:"images/face_ekicho.png",
+  };
+
+  const LAYOUTS = {
+    easy: {req:1, constraint:false, slots:[
+      {id:"a", shape:"big",    type:"rect",   x:30,  y:30,  w:205, h:280},
+      {id:"b", shape:"square", type:"rect",   x:245, y:30,  w:205, h:135},
+      {id:"c", shape:"round",  type:"circle", cx:347, cy:242, r:58, cell:{x:245,y:175,w:205,h:135}},
+    ]},
+    normal: {req:2, constraint:false, slots:[
+      {id:"a", shape:"big",    type:"rect",   x:30,  y:30,  w:205, h:280},
+      {id:"b", shape:"square", type:"rect",   x:245, y:30,  w:205, h:135},
+      {id:"c", shape:"round",  type:"circle", cx:295, cy:242, r:44, cell:{x:245,y:175,w:100,h:135}},
+      {id:"d", shape:"tri",    type:"tri",    pts:[[360,300],[445,300],[402,186]], cell:{x:355,y:175,w:95,h:135}},
+    ]},
+    deep: {req:2, constraint:true, slots:[
+      {id:"a", shape:"big",    type:"rect",   x:30,  y:30,  w:180, h:280},
+      {id:"b", shape:"long",   type:"rect",   x:220, y:30,  w:230, h:70},
+      {id:"c", shape:"square", type:"rect",   x:220, y:110, w:110, h:95},
+      {id:"d", shape:"round",  type:"circle", cx:395, cy:157, r:40, cell:{x:340,y:110,w:110,h:95}},
+      {id:"e", shape:"tri",    type:"tri",    pts:[[228,302],[322,302],[275,223]], cell:{x:220,y:215,w:110,h:95}},
+      {id:"f", shape:"square", type:"rect",   x:340, y:215, w:110, h:95},
+    ]},
+  };
+
+  const CUSTOMERS = [
+    {name:"山田のおじいちゃん", face:"face_ojii"},
+    {name:"花子おばあちゃん",   face:"face_obaa"},
+    {name:"大工の源さん",       face:"face_daiku"},
+    {name:"学生のゆうきくん",   face:"face_gakusei"},
+    {name:"看護師のさくらさん", face:"face_kango"},
+    {name:"お孫のみおちゃん",   face:"face_mio"},
+    {name:"機長さん",           face:"face_ekicho"},
+    {name:"梨園のおじさん",      face:"face_farmer"},
+    {name:"お医者さん",     　　 face:"face_doctor"},
+    {name:"忍者",      　　　　　face:"face_ninja"},
+    {name:"まなみ先生",      　　face:"face_teacher"},
+  ];
+  const THANKS = [
+    "まあ、きれいに詰めてくれてありがとう。お昼が楽しみです。",
+    "わあ、おいしそう！ 注文どおり、ばっちりです。",
+    "さすがですね。丁寧なお仕事、ありがとうございます。",
+    "風呂敷まで包んでくれて、うれしいなあ。また来ますね。",
+    "いい匂い！ 今日も一日がんばれそうです。",
+    "やった！ 今日も一日頑張ります。",
+  ];
+  const SEASON = {1:"🎍 新しい年",2:"❄️ 寒い日",3:"🌸 春の日",4:"🌷 春うらら",5:"🎏 さわやかな日",6:"☔ 梅雨の日",
+                  7:"🎋 夏の日",8:"🌻 暑い日",9:"🎑 お月見の頃",10:"🍁 秋の朝",11:"🍂 秋の深まる日",12:"⛄ 冬の日"};
+
+  // ---------------------------------------------------------------- state
+  const STORE = "bento-puzzle-v1";
+  let saved = {served:0, level:"easy"};
+  try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch (e) {}
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(saved)); } catch (e) {} };
+
+  let level = LAYOUTS[saved.level] ? saved.level : "easy";
+  let order = null;          // {customer, rice, required:[items], constraint}
+  let placed = {};           // slotId -> itemId
+  let selSlot = null;
+  let selItem = null;
+  let lastCustomer = -1;
+
+  const $ = id => document.getElementById(id);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(v => v[1]);
+  const slots = () => LAYOUTS[level].slots;
+  const slotById = id => slots().find(s => s.id === id);
+
+  // ---------------------------------------------------------------- orders
+  function newOrder() {
+    const L = LAYOUTS[level];
+    let ci; do { ci = Math.floor(Math.random() * CUSTOMERS.length); } while (ci === lastCustomer);
+    lastCustomer = ci;
+    const rice = pick(ITEMS.filter(i => i.kind === "rice"));
+    const constraint = L.constraint && Math.random() < 0.75 ? pick(["meat", "fish"]) : null;
+
+    const capacity = {};
+    L.slots.filter(s => s.shape !== "big").forEach(s => capacity[s.shape] = (capacity[s.shape] || 0) + 1);
+    const required = [];
+    for (const it of shuffle(ITEMS.filter(i => i.kind !== "rice"))) {
+      if (required.length >= L.req) break;
+      if (!capacity[it.shape]) continue;
+      if (constraint && it.tags.includes(constraint)) continue;
+      capacity[it.shape]--;
+      required.push(it);
+    }
+    order = {customer: CUSTOMERS[ci], rice, required, constraint};
+    placed = {}; selItem = null; selSlot = firstEmpty();
+    render();
+    say("① 光っている仕切りに、② 入れるものを選んでください。");
+  }
+
+  function orderText() {
+    let t = `${order.rice.name}のお弁当をお願いします。`;
+    if (order.required.length) t += `${order.required.map(i => i.name).join("と")}は入れてくださいね。`;
+    if (order.constraint === "meat") t += "お肉は苦手なので、入れないでください。";
+    if (order.constraint === "fish") t += "お魚やえびは苦手なので、入れないでください。";
+    return t + "あとはお任せします。";
+  }
+
+  // ---------------------------------------------------------------- rules
+  function check(slotId, item) {
+    const slot = slotById(slotId);
+    if (item.shape !== slot.shape)
+      return `「${item.name}」は、この${SHAPE_NAME[slot.shape]}の仕切りには形が合わないようです。もう一度選んでみましょう。`;
+    if (item.kind === "rice" && item.id !== order.rice.id)
+      return `お客様のご注文は「${order.rice.name}」でしたね。もう一度選んでみましょう。`;
+    if (order.constraint && item.tags.includes(order.constraint))
+      return `お客様は${order.constraint === "meat" ? "お肉" : "お魚やえび"}が苦手でしたね。ほかのものにしましょう。`;
+
+    const sim = Object.assign({}, placed, {[slotId]: item.id});
+    const placedIds = new Set(Object.values(sim));
+    const need = {}, empty = {};
+    for (const r of order.required) if (!placedIds.has(r.id)) need[r.shape] = (need[r.shape] || []).concat(r);
+    for (const s of slots()) if (!sim[s.id]) empty[s.shape] = (empty[s.shape] || 0) + 1;
+    for (const shape in need)
+      if (need[shape].length > (empty[shape] || 0))
+        return `このままだと、ご注文の「${need[shape][0].name}」を入れる場所がなくなってしまいます。ほかのものにしましょう。`;
+    return null;
+  }
+
+  function firstEmpty(after) {
+    const list = slots();
+    const start = after ? list.findIndex(s => s.id === after) + 1 : 0;
+    for (let k = 0; k < list.length; k++) {
+      const s = list[(start + k) % list.length];
+      if (!placed[s.id]) return s.id;
+    }
+    return null;
+  }
+
+  function tryPlace(slotId, itemId) {
+    const item = byId[itemId];
+    const problem = check(slotId, item);
+    if (problem) {
+      say(problem, "warn");
+      shake(slotId);
+      selItem = null;
+      renderItems();
+      return;
+    }
+    placed[slotId] = itemId;
+    selItem = null;
+    const done = slots().every(s => placed[s.id]);
+    selSlot = done ? null : firstEmpty(slotId);
+    render();
+    if (done) {
+      say("できあがりました！ 風呂敷に包みますね。", "ok");
+      setTimeout(finish, 650);
+    } else {
+      say(`「${item.name}」を詰めました。つぎの光っている仕切りへどうぞ。`, "ok");
+    }
+  }
+
+  // ---------------------------------------------------------------- rendering
+  function shapeMarkup(s, attrs) {
+    if (s.type === "rect") return `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="10" ${attrs}/>`;
+    if (s.type === "circle") return `<circle cx="${s.cx}" cy="${s.cy}" r="${s.r}" ${attrs}/>`;
+    return `<polygon points="${s.pts.map(p => p.join(",")).join(" ")}" ${attrs}/>`;
+  }
+  function bbox(s) {
+    if (s.type === "rect") return {x:s.x, y:s.y, w:s.w, h:s.h};
+    if (s.type === "circle") return {x:s.cx - s.r, y:s.cy - s.r, w:2 * s.r, h:2 * s.r};
+    const xs = s.pts.map(p => p[0]), ys = s.pts.map(p => p[1]);
+    return {x:Math.min(...xs), y:Math.min(...ys), w:Math.max(...xs) - Math.min(...xs), h:Math.max(...ys) - Math.min(...ys)};
+  }
+  const pic = (x, y, size, id) =>
+    `<image href="${IMG[id]}" x="${x - size / 2}" y="${y - size / 2}" width="${size}" height="${size}"/>`;
+
+  function contents(s, item) {
+    const b = bbox(s);
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    let out = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${item.color}"/>`;
+    if (item.kind === "rice") {
+      out += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="url(#${item.dots ? "goma" : "grain"})"/>`;
+      if (item.top) [[.3,.25],[.68,.45],[.35,.72],[.7,.82]].forEach(([fx, fy]) =>
+        out += pic(b.x + b.w * fx, b.y + b.h * fy, 40, "kuri"));
+      if (item.ume) out += `<circle cx="${cx}" cy="${cy}" r="${Math.min(b.w, b.h) * .11}" fill="#C8283B"/>`;
+      return out;
+    }
+    if (s.shape === "long") {
+      const n = 3, size = b.h * .8;
+      for (let k = 0; k < n; k++) out += pic(b.x + b.w * (k + .5) / n, cy, size, item.id);
+    } else if (s.shape === "tri") {
+      out += pic(cx, b.y + b.h * .66, b.h * .5, item.id);
+    } else {
+      out += pic(cx, cy, Math.min(b.w, b.h) * .7, item.id);
+    }
+    return out;
+  }
+
+  function renderBento() {
+    const svg = $("bento");
+    let html = `<defs>
+      <pattern id="grain" width="14" height="10" patternUnits="userSpaceOnUse">
+        <ellipse cx="4" cy="3" rx="2.6" ry="1.4" fill="rgba(255,255,255,.75)"/>
+        <ellipse cx="11" cy="8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.6)" transform="rotate(35 11 8)"/>
+      </pattern>
+      <pattern id="goma" width="16" height="16" patternUnits="userSpaceOnUse">
+        <ellipse cx="4" cy="4" rx="1.6" ry="1" fill="#2a1d1d"/>
+        <ellipse cx="12" cy="11" rx="1.6" ry="1" fill="#2a1d1d"/>
+        <ellipse cx="6" cy="12" rx="2.4" ry="1.3" fill="rgba(255,255,255,.45)"/>
+      </pattern>
+      <pattern id="baran" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+        <rect width="16" height="16" fill="#3F7E4E"/><rect width="5" height="16" fill="#4F9460"/>
+      </pattern>
+    </defs>
+    <rect x="6" y="6" width="468" height="328" rx="24" fill="#9B2C24"/>
+    <rect x="14" y="14" width="452" height="312" rx="18" fill="none" stroke="#C04A3E" stroke-width="2"/>`;
+
+    for (const s of slots()) {
+      if (s.cell) html += `<rect x="${s.cell.x}" y="${s.cell.y}" width="${s.cell.w}" height="${s.cell.h}" rx="10" fill="url(#baran)"/>`;
+    }
+    for (const s of slots()) {
+      const item = placed[s.id] ? byId[placed[s.id]] : null;
+      const label = `${SHAPE_NAME[s.shape]}の仕切り、${item ? item.name + "が入っています" : "空いています"}`;
+      html += `<g class="slot" data-slot="${s.id}" tabindex="0" role="button" aria-label="${label}">
+        <clipPath id="clip-${s.id}">${shapeMarkup(s, "")}</clipPath>`;
+      if (s.type === "circle") html += `<circle cx="${s.cx}" cy="${s.cy}" r="${s.r + 5}" fill="#F3EFE4"/>`;
+      html += shapeMarkup(s, `class="hit" fill="#2E1D19"`);
+      if (item) html += `<g clip-path="url(#clip-${s.id})">${contents(s, item)}</g>`;
+      if (selSlot === s.id) html += shapeMarkup(s, `class="sel"`);
+      html += `</g>`;
+    }
+    svg.innerHTML = html;
+  }
+
+  function tile(item) {
+    let inner = "";
+    if (item.ume) inner = `<span class="ume"></span>`;
+    else if (IMG[item.id]) inner = `<img src="${IMG[item.id]}" alt="">`;
+    return `<span class="tile ${item.shape}${item.dots ? " dots" : ""}" style="background-color:${item.color}">${inner}</span>`;
+  }
+
+  function renderItems() {
+    const shapes = new Set(slots().map(s => s.shape));
+    const list = ITEMS.filter(i => shapes.has(i.shape));
+    $("items").innerHTML = list.map(i =>
+      `<button type="button" class="item" data-item="${i.id}" aria-pressed="${selItem === i.id}">
+        ${tile(i)}<span>${i.name}</span></button>`).join("");
+  }
+
+  function renderOrder() {
+    $("face").innerHTML = `<img src="${IMG[order.customer.face]}" alt="">`;
+    $("who").textContent = `${order.customer.name}のご注文`;
+    $("order").textContent = orderText();
+    const ids = new Set(Object.values(placed));
+    const memo = [order.rice, ...order.required].map(i =>
+      `<li class="${ids.has(i.id) ? "done" : ""}">${ids.has(i.id) ? "✓ " : ""}${i.name}</li>`);
+    if (order.constraint) memo.push(`<li class="ng">${order.constraint === "meat" ? "お肉なし" : "お魚・えびなし"}</li>`);
+    $("checklist").innerHTML = memo.join("");
+  }
+
+  function render() {
+    renderOrder();
+    renderBento();
+    renderItems();
+    $("takeOut").disabled = !(selSlot && placed[selSlot]);
+    document.querySelectorAll(".levels button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.level === level)));
+    $("served").textContent = saved.served;
+  }
+
+  function say(msg, kind) {
+    const f = $("feedback");
+    f.textContent = msg;
+    f.className = "feedback" + (kind ? " " + kind : "");
+  }
+
+  function shake(slotId) {
+    const g = document.querySelector(`#bento .slot[data-slot="${slotId}"]`);
+    if (!g) return;
+    g.classList.remove("shake"); void g.getBBox(); g.classList.add("shake");
+  }
+
+  // ---------------------------------------------------------------- finish + wrap
+  function finish() {
+    saved.served += 1; save();
+    $("served").textContent = saved.served;
+    $("thanksWho").innerHTML = `<img src="${IMG[order.customer.face]}" alt="">${order.customer.name}`;
+    $("thanksLine").textContent = pick(THANKS);
+    const ov = $("overlay"), stage = $("wrapSvg"), sheet = $("sheet");
+    stage.classList.remove("fold"); sheet.classList.remove("done");
+    ov.classList.add("open");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      stage.classList.add("fold");
+      if (reduce) sheet.classList.add("done");
+    }));
+    setTimeout(() => { sheet.classList.add("done"); $("next").focus(); }, reduce ? 50 : 3000);
+  }
+
+  // ---------------------------------------------------------------- events
+  $("bento").addEventListener("click", e => {
+    const g = e.target.closest(".slot"); if (!g) return;
+    onSlot(g.dataset.slot);
+  });
+  $("bento").addEventListener("keydown", e => {
+    const g = e.target.closest(".slot"); if (!g) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSlot(g.dataset.slot); }
+  });
+  function onSlot(id) {
+    const s = slotById(id);
+    if (selItem && !placed[id]) { tryPlace(id, selItem); return; }
+    selSlot = id;
+    render();
+    const g = document.querySelector(`#bento .slot[data-slot="${id}"]`); if (g) g.focus();
+    if (placed[id]) say(`「${byId[placed[id]].name}」が入っています。入れ替えるときは「取り出す」を押してください。`);
+    else say(`${SHAPE_NAME[s.shape]}の仕切りを選びました。入れるものを選んでください。`);
+  }
+
+  $("items").addEventListener("click", e => {
+    const b = e.target.closest(".item"); if (!b) return;
+    const id = b.dataset.item;
+    if (selSlot && !placed[selSlot]) { tryPlace(selSlot, id); return; }
+    selItem = selItem === id ? null : id;
+    renderItems();
+    if (selItem) say(`「${byId[id].name}」を選びました。入れる仕切りをタップしてください。`);
+  });
+
+  $("takeOut").addEventListener("click", () => {
+    if (!selSlot || !placed[selSlot]) return;
+    const name = byId[placed[selSlot]].name;
+    delete placed[selSlot];
+    render();
+    say(`「${name}」を取り出しました。入れるものを選び直してください。`);
+  });
+  $("clearAll").addEventListener("click", () => {
+    placed = {}; selItem = null; selSlot = firstEmpty();
+    render();
+    say("お弁当箱を空にしました。はじめから詰めてみましょう。");
+  });
+  document.querySelectorAll(".levels button").forEach(b => b.addEventListener("click", () => {
+    level = b.dataset.level; saved.level = level; save();
+    newOrder();
+  }));
+  $("next").addEventListener("click", () => {
+    $("overlay").classList.remove("open");
+    newOrder();
+  });
+
+  // ---------------------------------------------------------------- start
+  const m = new Date().getMonth() + 1;
+  $("greet").textContent = `${SEASON[m]}、お弁当屋さんへようこそ! ゆっくり詰めていきましょう。`;
+  newOrder();
+})();
+</script>
+</body>
+</html>
