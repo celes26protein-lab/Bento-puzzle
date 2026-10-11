@@ -3,7 +3,7 @@
 お客様のご注文に合わせて、お弁当箱の仕切りにごはんとおかずを詰めていく、
 ゆっくり遊べる脳トレパズルです。時間制限はありません。
 
-- 遊ぶ: https:/celes26protein-lab/.github.io/bento-puzzle/
+- 遊ぶ: https:/celes26protein-lab/.github.io/bento-puzzle/](https://white-lama.itch.io/bento-puzzle-jp-version)
 - 対応: パソコン・タブレット（スマホでも遊べます）
 
 ## 遊び方
